@@ -7,7 +7,8 @@ def scan(db,folder):
  for p in sorted(Path(folder).rglob('*.wav')):
   try:
    with wave.open(str(p),'rb')as w:duration=w.getnframes()/w.getframerate();rate=w.getframerate();channels=w.getnchannels()
-   digest=hashlib.file_digest(p.open('rb'),'sha256').hexdigest();db.execute('INSERT OR REPLACE INTO samples VALUES(?,?,?,?,?)',(str(p.resolve()),digest,duration,rate,channels));report['indexed']+=1
+   with p.open('rb')as file:digest=hashlib.file_digest(file,'sha256').hexdigest()
+   db.execute('INSERT OR REPLACE INTO samples VALUES(?,?,?,?,?)',(str(p.resolve()),digest,duration,rate,channels));report['indexed']+=1
   except(wave.Error,OSError,EOFError)as e:report['errors'].append({'file':str(p),'error':str(e)})
  db.commit();return report
 def search(db,term='',minimum=0):return [dict(zip(['path','sha256','seconds','rate','channels'],row))for row in db.execute('SELECT * FROM samples WHERE path LIKE ? AND duration>=? ORDER BY path',('%'+term+'%',minimum))]
